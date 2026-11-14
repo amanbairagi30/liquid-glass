@@ -519,6 +519,9 @@ export function CardDemo({ header }: { header: ReactNode }) {
   const pos = useRef<Point>({ x: 0, y: 0 });
   const running = useRef<AnimationPlaybackControls[]>([]);
   const drag = useRef<{ id: number; dx: number; dy: number; sx: number; sy: number; active: boolean; history: { x: number; y: number; t: number }[] } | null>(null);
+  const pending = useRef<Point | null>(null);
+  const frame = useRef(0);
+  useEffect(() => () => cancelAnimationFrame(frame.current), []);
   const [snap, setSnap] = useState(0);
   const [placed, setPlaced] = useState(false);
   const reduceMotion = useReducedMotion();
@@ -597,16 +600,33 @@ export function CardDemo({ header }: { header: ReactNode }) {
     else if (x > maxX) x = maxX + rubberband(x - maxX, g.sw);
     if (y < 0) y = rubberband(y, g.sh);
     else if (y > maxY) y = maxY + rubberband(y - maxY, g.sh);
-    place({ x, y });
+    // Every event feeds the velocity history; the card itself moves once per frame.
     const now = performance.now();
     d.history.push({ x, y, t: now });
     while (d.history.length > 2 && now - d.history[0].t > 100) d.history.shift();
+    pending.current = { x, y };
+    if (!frame.current) {
+      frame.current = requestAnimationFrame(() => {
+        frame.current = 0;
+        if (pending.current) place(pending.current);
+        pending.current = null;
+      });
+    }
+  };
+
+  /** Applies a move still waiting for the next frame, so a release starts from where the finger was. */
+  const flush = () => {
+    cancelAnimationFrame(frame.current);
+    frame.current = 0;
+    if (pending.current) place(pending.current);
+    pending.current = null;
   };
 
   const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
     const d = drag.current;
     if (!d || e.pointerId !== d.id) return;
     drag.current = null;
+    flush();
     const g = geometry();
     if (!g || !d.active) return;
 
@@ -683,7 +703,7 @@ export function CardDemo({ header }: { header: ReactNode }) {
               role="group"
               tabIndex={0}
               aria-label={`${current.name}. Drag it, or use the arrow keys to move it between corners.`}
-              className={`absolute ${current.width} ${current.radius} cursor-grab touch-none pointer-coarse:touch-pan-y outline-none focus-visible:ring-[3px] focus-visible:ring-ring/60 active:cursor-grabbing`}
+              className={`absolute ${current.width} ${current.radius} cursor-grab touch-none select-none [-webkit-touch-callout:none] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/60 active:cursor-grabbing`}
               style={{ visibility: placed ? "visible" : "hidden" }}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
