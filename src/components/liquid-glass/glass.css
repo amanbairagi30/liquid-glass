@@ -1,0 +1,172 @@
+/* ============================================================
+   Liquid glass material.
+
+   The tokens come first, one set per state. A surface is glass by using four
+   declarations: background (the tint), backdrop-filter (set inline: the colour
+   steps, then the rim lens), box-shadow (the edge) and color (the ink).
+   ============================================================ */
+
+/* Registered so a surface glides between states instead of jumping. */
+@property --lg-a { syntax: '<number>'; inherits: true; initial-value: 0.2; }
+@property --lg-sat { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --lg-bri { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --lg-light { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --lg-lift { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --lg-tint { syntax: '<color>'; inherits: true; initial-value: #fff; }
+
+/* Light mode, light glass, dark text: the default. */
+.lg[data-state='light'] {
+  --lg-tint: rgb(255 255 255);
+  --lg-light: 1;
+  --lg-edge-in:
+    inset 1.5px 1.5px 1px -1px rgb(255 255 255 / 0.95),
+    inset -1.5px -1.5px 1px -1px rgb(255 255 255 / 0.55),
+    inset 0 0 0 0.5px rgb(255 255 255 / 0.3);
+  --lg-edge-out: 0 0 0 0.5px rgb(0 0 0 / 0.06), 0 6px 24px rgb(0 0 0 / 0.08);
+  --lg-ink: rgb(0 0 0 / 0.86);
+  --lg-ink-2: rgb(60 60 67 / 0.7);
+  --lg-ink-solid: #000;
+  --lg-ink-fade: 0.86;
+  --lg-blend: multiply;
+  /* A highlighted row is a lighter layer of the glass, never a grey wash. */
+  --lg-row-hover: rgb(255 255 255 / 0.42);
+  --lg-row-on: rgb(255 255 255 / 0.76);
+  --lg-row-stroke: inset 0 0 0 1px rgb(255 255 255 / 0.9);
+}
+/* Light mode over a dark area: light text. */
+.lg[data-state='shaded'] {
+  --lg-tint: rgb(16 18 22);
+  --lg-light: 0.33;
+  --lg-edge-in: inset 0 1px 0 rgb(255 255 255 / 0.2);
+  --lg-edge-out: 0 0 0 0.5px rgb(0 0 0 / 0.35), 0 6px 24px rgb(0 0 0 / 0.16);
+}
+/* Dark mode: the light edge at about a third of its strength, darker outline and shadow. */
+.lg[data-state='dark'] {
+  --lg-tint: rgb(20 20 24);
+  --lg-light: 0.33;
+  --lg-edge-in:
+    inset 1.5px 1.5px 1px -1px rgb(255 255 255 / 0.32),
+    inset -1.5px -1.5px 1px -1px rgb(255 255 255 / 0.18),
+    inset 0 0 0 0.5px rgb(255 255 255 / 0.1);
+  --lg-edge-out: 0 0 0 0.5px rgb(0 0 0 / 0.4), 0 6px 24px rgb(0 0 0 / 0.3);
+}
+.lg[data-state='shaded'],
+.lg[data-state='dark'] {
+  --lg-ink: rgb(255 255 255 / 0.94);
+  --lg-ink-2: rgb(235 235 245 / 0.64);
+  --lg-ink-solid: #fff;
+  --lg-ink-fade: 0.94;
+  --lg-blend: plus-lighter;
+  --lg-row-hover: rgb(255 255 255 / 0.1);
+  --lg-row-on: rgb(255 255 255 / 0.18);
+  --lg-row-stroke: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+
+/* Older engines without plus-lighter get screen, the nearest blend. */
+@supports not (mix-blend-mode: plus-lighter) {
+  .lg[data-state='shaded'],
+  .lg[data-state='dark'] { --lg-blend: screen; }
+}
+
+/* Hover brightens the tint by about 14% instead of lifting a shadow. Pointer
+   devices only: a tap would otherwise leave the surface stuck in its hover state. */
+@media (hover: hover) and (pointer: fine) {
+  .lg[data-state='light']:hover { --lg-lift: 1.14; }
+  .lg[data-state='shaded']:hover { --lg-tint: rgb(49 51 55); }
+  .lg[data-state='dark']:hover { --lg-tint: rgb(53 53 56); }
+}
+
+/* Layer switches on the demo page. */
+.lg[data-shadow='off'] { --lg-edge-out: 0 0 0 0 transparent; }
+.lg[data-rim='off'] { --lg-edge-in: 0 0 0 0 transparent; --lg-light: 0; }
+.lg[data-blend='off'] { --lg-blend: normal; }
+
+.lg {
+  position: relative;
+  border-radius: var(--lg-radius);
+  color: var(--lg-ink);
+  /* No transform, opacity, filter, z-index or will-change here: see Glass.tsx. */
+  transition:
+    --lg-a 0.45s ease,
+    --lg-sat 0.45s ease,
+    --lg-bri 0.45s ease,
+    --lg-light 0.45s ease,
+    --lg-lift 0.2s ease,
+    --lg-tint 0.45s ease,
+    color 0.3s ease;
+}
+.lg-defs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+
+/* Safari and Firefox: the bent backdrop, drawn with WebGL, under the tint. */
+.lg-lens {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  pointer-events: none;
+  filter: saturate(var(--lg-sat)) brightness(var(--lg-bri));
+}
+
+.lg-glass {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-color: color-mix(in srgb, var(--lg-tint) calc(var(--lg-a) * var(--lg-lift) * 100%), transparent);
+  box-shadow: var(--lg-edge-in), var(--lg-edge-out);
+  transition: box-shadow 0.45s ease;
+  pointer-events: none;
+}
+
+/* Inner light: a highlight from the top left... */
+.lg-glass::before,
+.lg-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: var(--lg-light);
+}
+.lg-glass::before {
+  background: radial-gradient(120% 140% at 0% 0%, rgb(255 255 255 / 0.3), rgb(255 255 255 / 0) 55%);
+}
+/* ...and soft glows just inside the rim: brighter at the top and left, a little shade at the bottom. */
+.lg-glass::after {
+  box-shadow:
+    inset 0 8px 14px -8px rgb(255 255 255 / 0.55),
+    inset 8px 0 14px -8px rgb(255 255 255 / 0.4),
+    inset 0 -8px 12px -8px rgb(0 0 0 / 0.07);
+}
+
+.lg-content { position: relative; border-radius: inherit; }
+
+/* Ink: everything drawn on the glass. */
+.lg-ink { display: block; color: var(--lg-ink); mix-blend-mode: var(--lg-blend); transition: color 0.3s ease; }
+.lg-ink[data-tone='2'] { color: var(--lg-ink-2); }
+.lg-ink[data-tone='3'] { opacity: 0.28; }
+.lg-ink[data-icon] { color: var(--lg-ink-solid); opacity: var(--lg-ink-fade); }
+.lg-ink[data-icon][data-tone='2'] { opacity: 0.6; }
+.lg-ink[data-flat] { mix-blend-mode: normal; }
+
+/* No backdrop-filter at all: a mostly solid surface, plain ink. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .lg-glass { background-color: color-mix(in srgb, var(--lg-tint) 86%, transparent); }
+  .lg-ink { mix-blend-mode: normal; }
+}
+
+/* Asked for less transparency, or forced colours: a solid surface in the same tint. */
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  .lg-glass {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background-color: var(--lg-tint);
+  }
+  .lg[data-state='light'] .lg-glass { background-color: rgb(246 246 248); }
+  .lg-glass::before, .lg-glass::after, .lg-lens { display: none; }
+  .lg-ink { mix-blend-mode: normal; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lg, .lg-glass, .lg-ink { transition: none; }
+}

@@ -1,0 +1,120 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "../components/liquid-glass/glass.css";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-geist-serif);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-green: var(--green);
+  --color-green-strong: var(--green-strong);
+  --color-green-soft: var(--green-soft);
+  --color-fill: var(--fill);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/*
+  White only. The neutrals follow Apple's light palette (label, secondary label,
+  grouped background, separator); royal green is the single accent.
+*/
+:root {
+  color-scheme: light;
+
+  --green: #0a6e4a; /* 6.3:1 on white, and white on it */
+  --green-strong: #085a3d; /* pressed */
+  --green-soft: #e9f4ee; /* tinted fills */
+  --fill: #f5f5f7; /* grouped background */
+
+  --background: #fbfbfa; /* near white: lets white cards lift */
+  --foreground: #1d1d1f;
+  --card: #ffffff;
+  --card-foreground: #1d1d1f;
+  --popover: #ffffff;
+  --popover-foreground: #1d1d1f;
+  --primary: var(--green);
+  --primary-foreground: #ffffff;
+  --secondary: var(--fill);
+  --secondary-foreground: #1d1d1f;
+  --muted: #e8e8ed;
+  --muted-foreground: #6e6e73;
+  --accent: var(--fill);
+  --accent-foreground: #1d1d1f;
+  --destructive: #d70015;
+  --border: rgb(0 0 0 / 0.08);
+  --input: #e3e3e8;
+  --ring: #8e8e93; /* focus stays neutral; green is for state, not focus */
+  --radius: 0.75rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-synthesis: none;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-size: 17px;
+    line-height: 1.47;
+  }
+  ::selection {
+    background: rgb(10 110 74 / 0.18);
+  }
+}
+
+/* Display type: tight leading and negative tracking that grows with size. */
+@utility display {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+/* Every pressable thing answers the press, instantly. */
+@utility pressable {
+  transition: transform 160ms var(--ease-out-strong);
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pressable,
+  .pressable:active {
+    transition: none;
+    transform: none;
+  }
+}
